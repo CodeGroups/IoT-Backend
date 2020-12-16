@@ -8,8 +8,7 @@
 #define FIREBASE_AUTH "4an67TrO4B7ajIQOfUWKcFkhWjyxvIskTF0U2v5E"
 #define WIFI_SSID "COMTECO-N3723723"
 #define WIFI_PASSWORD "DCQWV21408"
-#define Led D4
-
+#define D4 2
 
 const long utcOffsetInSeconds = -14400;
 
@@ -41,7 +40,7 @@ void setup() {
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
 
-  pinMode(Led, OUTPUT);
+  pinMode(D4, OUTPUT);
 
   timeClient.begin();
   timeClient.setTimeOffset(utcOffsetInSeconds);
@@ -57,11 +56,11 @@ void loop() {
   
   if (estado)
   {
-    digitalWrite(Led, HIGH);
+    digitalWrite(D4, HIGH);
   }
   else
   {
-    digitalWrite(Led, LOW);
+    digitalWrite(D4, LOW);
   }
   delay(60000);
 }
