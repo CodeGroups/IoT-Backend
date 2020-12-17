@@ -23,7 +23,7 @@ NTPClient timeClient(ntpUDP);
 volatile bool estado = false;
 FirebaseData firebaseData;
 String path = "/";
-long time;
+long timeLong;
 int sensor1,sensor2;
 int hours_attention[9];
 
@@ -83,7 +83,7 @@ void loop() {
 void showTime() {
   
   unsigned long epochTime = timeClient.getEpochTime();
-  time = epochTime;
+  timeLong = epochTime;
   Serial.print(epochTime);
   Serial.print(" - ");
   Serial.print(timeClient.getHours());
@@ -222,14 +222,14 @@ void make_up_hours(){
   FirebaseJsonData jsonData;
   //por ahora 2 para la prueba
   for(int i=0; i<2;i++){
-    firebaseData.jsonObject().get(jsonData, "dispositivo/casilla-00" + (i+1) + "/horario/tiempo_inicio");
+    firebaseData.jsonObject().get(jsonData, "dispositivo/casilla-00" + String(i+1) + "/horario/tiempo_inicio");
     hours_attention = jsonData.intValue;
   }
 }
 
 void check_time(){
   int c=0;
-  if(hours_attention[0] == time){
+  if(hours_attention[0] == timeLong){
     digitalWrite(D1, HIGH);
     digitalWrite(D5, HIGH);
     while(c<60){
@@ -260,4 +260,3 @@ void check_time(){
     digitalWrite(D2, LOW);
   }
 }
-
