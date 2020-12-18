@@ -8,11 +8,13 @@
 #define FIREBASE_AUTH "4an67TrO4B7ajIQOfUWKcFkhWjyxvIskTF0U2v5E"
 #define WIFI_SSID "COMTECO-N3723723"
 #define WIFI_PASSWORD "DCQWV21408"
-#define D1 5 //led casilla 1
-#define D2 4 //led casilla 2
-#define D3 0 //sensor casilla 1
-#define D4 2 //sensor casilla 2
-#define D5 14 //estereo
+
+#define pinLed1 D1 //led casilla 1
+#define pinLed2 D2 //led casilla 2
+#define pinSensor1 D3 //sensor casilla 1
+#define pinSensor2 D5 //sensor casilla 2
+#define pinBuzzer D6 //estereo
+
 
 const long utcOffsetInSeconds = -14400;
 
@@ -32,8 +34,8 @@ int hours_attention[9];
 void setup() {
   Serial.begin(9600);
   //use inout for sensor
-  pinMode(D3 , INPUT);
-  pinMode(D4 , INPUT);
+  pinMode(pinSensor1 , INPUT);
+  pinMode(pinSensor2 , INPUT);
   // connect to wifi.
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("connecting");
@@ -48,9 +50,9 @@ void setup() {
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
 
-  pinMode(D1, OUTPUT);
-  pinMode(D2, OUTPUT);
-  pinMode(D5, OUTPUT);
+  pinMode(pinLed1, OUTPUT);
+  pinMode(pinLed2, OUTPUT);
+  pinMode(pinBuzzer, OUTPUT);
 
   timeClient.begin();
   timeClient.setTimeOffset(utcOffsetInSeconds);
@@ -61,8 +63,8 @@ void setup() {
 
 
 void loop() {
-  sensor1 = digitalRead(D3);  //lectura digital de pin
-  sensor2 = digitalRead(D4);  //lectura digital de pin
+  sensor1 = digitalRead(pinSensor1);  //lectura digital de pin
+  sensor2 = digitalRead(pinSensor2);  //lectura digital de pin
 
   configAll();
   showTime();
@@ -71,18 +73,18 @@ void loop() {
   
   if (estado)
   {
-    digitalWrite(D4, HIGH);
+    digitalWrite(pinSensor2, HIGH);
   }
   else
   {
-    digitalWrite(D4, LOW);
+    digitalWrite(pinSensor2, LOW);
   }
   delay(60000);
 }
 
 void showTime() {
   
-  unsigned long epochTime = timeClient.getEpochTime();
+  long epochTime = timeClient.getEpochTime();
   timeLong = epochTime;
   Serial.print(epochTime);
   Serial.print(" - ");
@@ -233,14 +235,16 @@ void check_time(){
   FirebaseJson json2;
   if(hours_attention[0] == timeLong){
     //se construye el json
-    json1.add("hora", timeLong).add("estado", true);
-    json2.add("hora", timeLong).add("temp2", false);
-    digitalWrite(D1, HIGH);
-    digitalWrite(D5, HIGH);
+    int intTime = timeLong;
+    json1.add("hora", intTime).add("estado", true);
+    json2.add("hora", intTime).add("temp2", false);
+    
+    digitalWrite(pinLed1, HIGH);
+    digitalWrite(pinBuzzer, HIGH);
     while(c<60){
       if(sensor1 == HIGH){
-        digitalWrite(D1, LOW);
-        digitalWrite(D5, LOW);
+        digitalWrite(pinLed1, LOW);
+        digitalWrite(pinBuzzer, LOW);
         //guardar historial
         if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+ String(timeLong)+"/", json1)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
@@ -251,8 +255,8 @@ void check_time(){
       delay(1000);
       c++;
     }
-    digitalWrite(D5, LOW);
-    digitalWrite(D1, LOW);
+    digitalWrite(pinBuzzer, LOW);
+    digitalWrite(pinLed1, LOW);
     if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+String(timeLong)+"/", json2)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
         } else {
@@ -260,12 +264,12 @@ void check_time(){
         }
   }
   else if(hours_attention[1] == timeLong){
-    digitalWrite(D2, HIGH);
-    digitalWrite(D5, HIGH);
+    digitalWrite(pinLed2, HIGH);
+    digitalWrite(pinBuzzer, HIGH);
     while(c<60){
       if(sensor1 == HIGH){
-        digitalWrite(D2, LOW);
-        digitalWrite(D5, LOW);
+        digitalWrite(pinLed2, LOW);
+        digitalWrite(pinBuzzer, LOW);
         //guardar historial
         if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/"+String(timeLong)+"/", json1)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
@@ -276,8 +280,8 @@ void check_time(){
       delay(1000);
       c++;
     }
-    digitalWrite(D5, LOW);
-    digitalWrite(D2, LOW);
+    digitalWrite(pinBuzzer, LOW);
+    digitalWrite(pinLed2, LOW);
     if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/" + String(timeLong) + "/", json2)) {
       Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
     } else {
