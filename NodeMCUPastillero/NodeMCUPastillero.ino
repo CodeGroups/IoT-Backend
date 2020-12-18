@@ -223,13 +223,18 @@ void make_up_hours(){
   //por ahora 2 para la prueba
   for(int i=0; i<2;i++){
     firebaseData.jsonObject().get(jsonData, "dispositivo/casilla-00" + String(i+1) + "/horario/tiempo_inicio");
-    hours_attention = jsonData.intValue;
+    hours_attention[i] = jsonData.intValue;
   }
 }
 
 void check_time(){
   int c=0;
+  FirebaseJson json1;
+  FirebaseJson json2;
   if(hours_attention[0] == timeLong){
+    //se construye el json
+    json1.add("hora", timeLong).add("estado", true);
+    json2.add("hora", timeLong).add("temp2", false);
     digitalWrite(D1, HIGH);
     digitalWrite(D5, HIGH);
     while(c<60){
@@ -237,14 +242,24 @@ void check_time(){
         digitalWrite(D1, LOW);
         digitalWrite(D5, LOW);
         //guardar historial
+        if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+ String(timeLong)+"/", json1)) {
+          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+        } else {
+          Serial.println(firebaseData.errorReason());
+        }
       }
       delay(1000);
       c++;
     }
     digitalWrite(D5, LOW);
     digitalWrite(D1, LOW);
+    if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+String(timeLong)+"/", json2)) {
+          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+        } else {
+          Serial.println(firebaseData.errorReason());
+        }
   }
-  else if(hours_attention[1] == time){
+  else if(hours_attention[1] == timeLong){
     digitalWrite(D2, HIGH);
     digitalWrite(D5, HIGH);
     while(c<60){
@@ -252,11 +267,21 @@ void check_time(){
         digitalWrite(D2, LOW);
         digitalWrite(D5, LOW);
         //guardar historial
+        if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/"+String(timeLong)+"/", json1)) {
+          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+        } else {
+          Serial.println(firebaseData.errorReason());
+        }
       }
       delay(1000);
       c++;
     }
     digitalWrite(D5, LOW);
     digitalWrite(D2, LOW);
+    if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/" + String(timeLong) + "/", json2)) {
+      Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+    } else {
+      Serial.println(firebaseData.errorReason());
+    }
   }
 }
