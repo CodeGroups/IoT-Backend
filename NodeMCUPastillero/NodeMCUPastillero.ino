@@ -22,12 +22,12 @@ NTPClient timeClient(ntpUDP);
 
 volatile bool estado = false;
 FirebaseData firebaseData;
-String path = "/";
+String path = "/dispositivo/";
 long timeLong;
 int sensor1,sensor2;
 int hours_attention[9];
 
-
+FirebaseData fbDataCasilla[2];
 
 void setup() {
   Serial.begin(9600);
@@ -58,9 +58,18 @@ void setup() {
   
   while(true)
   {
-    if(configAll){
+    if(getDataFromFirebase("/dispositivo/casilla-001", 0)){
       break;
     }
+    delay(10000);
+    
+  }
+  while(true)
+  {
+    if(getDataFromFirebase("/dispositivo/casilla-002/", 1)){
+      break;
+    }
+    delay(10000);
   }
 }
 
@@ -71,12 +80,13 @@ void loop() {
 
   //configAll();
   showTime();
-  make_up_hours();
-  check_time();
+  //make_up_hours();
+  //check_time();
   delay(60000);
 }
 
 void showTime() {
+  timeClient.update();
   unsigned long epochTime = timeClient.getEpochTime();
   timeLong = epochTime;
   Serial.print(epochTime);
@@ -90,44 +100,44 @@ void showTime() {
   Serial.println(timeClient.getFormattedTime());
 }
 
-void configAll() {
-  Firebase.getJSON(firebaseData, path);
+bool getDataFromFirebase(String mPath, int casilla) {
+  Serial.print("Trying: ");
+  Serial.println(mPath);
+  Firebase.getJSON(fbDataCasilla[casilla], mPath);
 
-  if (firebaseData.jsonString().length() > 0)
+  if (fbDataCasilla[casilla].jsonString().length() > 0)
   {
     Serial.println("PASSED");
-    Serial.println("PATH: " + firebaseData.dataPath());
-    Serial.println("TYPE: " + firebaseData.dataType());
-    Serial.println("ETag: " + firebaseData.ETag());
+    Serial.println("PATH: " + fbDataCasilla[casilla].dataPath());
+    Serial.println("TYPE: " + fbDataCasilla[casilla].dataType());
+    Serial.println("ETag: " + fbDataCasilla[casilla].ETag());
     Serial.print("VALUE: ");
-    String value = firebaseData.jsonString();
-    //estado = firebaseData.boolData();
+    String value = fbDataCasilla[casilla].jsonString();
     Serial.println(value);
     Serial.println("------------------------------------");
     Serial.println();
-    //get_config_1();
-    make_up_hours();
+    make_up_hours(casilla);
     Serial.println("------------------------------------");
     Serial.println();
-    return true
+    return true;
   }
   else
   {
     Serial.println("FAILED");
-    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println("REASON: " + fbDataCasilla[casilla].errorReason());
     Serial.println("------------------------------------");
     Serial.println();
-    return false
+    return false;
   }
 }
 
-void make_up_hours(){
+void make_up_hours(int casilla){
   FirebaseJsonData jsonData;
   //por ahora 2 para la prueba
-  for(int i=0; i<2;i++){
-    firebaseData.jsonObject().get(jsonData, "dispositivo/casilla-00" + String(i+1) + "/horario/tiempo_inicio");
-    hours_attention[i] = jsonData.intValue;
-  }
+  fbDataCasilla[casilla].jsonObject().get(jsonData, "/horario/tiempo_inicio");
+  hours_attention[casilla] = jsonData.intValue;
+  Serial.print("hours_attention: ");
+  Serial.println(hours_attention[casilla]);
 }
 
 void check_time(){
@@ -136,8 +146,9 @@ void check_time(){
   FirebaseJson json2;
   if(hours_attention[0] == timeLong){
     //se construye el json
-    json1.add("hora", timeLong).add("estado", true);
-    json2.add("hora", timeLong).add("temp2", false);
+    int intTime = timeLong;
+    json1.add("hora", intTime).add("estado", true);
+    json2.add("hora", intTime).add("temp2", false);
     digitalWrite(D1, HIGH);
     digitalWrite(D5, HIGH);
     while(c<60){
