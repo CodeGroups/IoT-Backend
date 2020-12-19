@@ -8,13 +8,11 @@
 #define FIREBASE_AUTH "4an67TrO4B7ajIQOfUWKcFkhWjyxvIskTF0U2v5E"
 #define WIFI_SSID "COMTECO-N3723723"
 #define WIFI_PASSWORD "DCQWV21408"
-
-#define pinLed1 D1 //led casilla 1
-#define pinLed2 D2 //led casilla 2
-#define pinSensor1 D3 //sensor casilla 1
-#define pinSensor2 D5 //sensor casilla 2
-#define pinBuzzer D6 //estereo
-
+#define D1 5 //led casilla 1
+#define D2 4 //led casilla 2
+#define D3 0 //sensor casilla 1
+#define D4 2 //sensor casilla 2
+#define D5 14 //estereo
 
 const long utcOffsetInSeconds = -14400;
 
@@ -34,8 +32,8 @@ int hours_attention[9];
 void setup() {
   Serial.begin(9600);
   //use inout for sensor
-  pinMode(pinSensor1 , INPUT);
-  pinMode(pinSensor2 , INPUT);
+  pinMode(D3 , INPUT);
+  pinMode(D4 , INPUT);
   // connect to wifi.
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("connecting");
@@ -50,41 +48,36 @@ void setup() {
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
 
-  pinMode(pinLed1, OUTPUT);
-  pinMode(pinLed2, OUTPUT);
-  pinMode(pinBuzzer, OUTPUT);
+  pinMode(D1, OUTPUT);
+  pinMode(D2, OUTPUT);
+  pinMode(D5, OUTPUT);
 
   timeClient.begin();
   timeClient.setTimeOffset(utcOffsetInSeconds);
   timeClient.setUpdateInterval(60000);
   
-  //get_config_1();
+  while(true)
+  {
+    if(configAll){
+      break;
+    }
+  }
 }
 
 
 void loop() {
-  sensor1 = digitalRead(pinSensor1);  //lectura digital de pin
-  sensor2 = digitalRead(pinSensor2);  //lectura digital de pin
+  sensor1 = digitalRead(D3);  //lectura digital de pin
+  sensor2 = digitalRead(D4);  //lectura digital de pin
 
-  configAll();
+  //configAll();
   showTime();
   make_up_hours();
   check_time();
-  
-  if (estado)
-  {
-    digitalWrite(pinSensor2, HIGH);
-  }
-  else
-  {
-    digitalWrite(pinSensor2, LOW);
-  }
   delay(60000);
 }
 
 void showTime() {
-  
-  long epochTime = timeClient.getEpochTime();
+  unsigned long epochTime = timeClient.getEpochTime();
   timeLong = epochTime;
   Serial.print(epochTime);
   Serial.print(" - ");
@@ -96,35 +89,6 @@ void showTime() {
   Serial.print(" - ");
   Serial.println(timeClient.getFormattedTime());
 }
-
-/* void actualizar_estado()
-{
-  Firebase.getJSON(firebaseData, path + "medicine");
-
-  if (firebaseData.jsonString().length() > 0)
-  {
-    Serial.println("PASSED");
-    Serial.println("PATH: " + firebaseData.dataPath());
-    Serial.println("TYPE: " + firebaseData.dataType());
-    Serial.println("ETag: " + firebaseData.ETag());
-    Serial.print("VALUE: ");
-    String value = firebaseData.jsonString();
-    //estado = firebaseData.boolData();
-    Serial.println(value);
-    Serial.println("------------------------------------");
-    Serial.println();
-  }
-  else
-  {
-    Serial.println("FAILED");
-    Serial.println("REASON: " + firebaseData.errorReason());
-    Serial.println("------------------------------------");
-    Serial.println();
-  }
-  delay(20000);
-} */
-
-int current_time;
 
 void configAll() {
   Firebase.getJSON(firebaseData, path);
@@ -141,9 +105,11 @@ void configAll() {
     Serial.println(value);
     Serial.println("------------------------------------");
     Serial.println();
-    get_config_1();
+    //get_config_1();
+    make_up_hours();
     Serial.println("------------------------------------");
     Serial.println();
+    return true
   }
   else
   {
@@ -151,73 +117,8 @@ void configAll() {
     Serial.println("REASON: " + firebaseData.errorReason());
     Serial.println("------------------------------------");
     Serial.println();
+    return false
   }
-}
-
-
-//slot 1
-String id_1 = "med-001";
-bool  historial_status_1;
-String historial_time_1;
-int   quantity_1;
-String   first_day_1;
-String   init_time_1;
-int   interval_1;
-
-void get_config_1() {
-
-  /*
-  Firebase.getJSON(historial,   path + "historial/" + id);
-  Firebase.getJSON(medicine,    path + "medicine/"  + id);
-  Firebase.getJSON(schedule,    path + "schedule/"  + id);
-
-  */
-  
-  FirebaseJsonData jsonData;
-  
-  firebaseData.jsonObject().get(jsonData, "historial/" + id_1 + "/status");
-  historial_status_1 = jsonData.boolValue;
-  
-  firebaseData.jsonObject().get(jsonData, "historial/" + id_1 + "/time");
-  historial_time_1 = jsonData.stringValue;
-
-  firebaseData.jsonObject().get(jsonData, "medicine/" + id_1 + "/quantity");
-  quantity_1 = jsonData.intValue;
-
-  firebaseData.jsonObject().get(jsonData, "schedule/" + id_1 + "/first_date");
-  first_day_1 = jsonData.stringValue;
-
-  firebaseData.jsonObject().get(jsonData, "schedule/" + id_1 + "/init_time");
-  init_time_1 = jsonData.stringValue;
-
-  firebaseData.jsonObject().get(jsonData, "schedule/" + id_1 + "/interval");
-  interval_1 = jsonData.intValue;
-
-  Serial.print("historial_status_1:   ");
-  Serial.println(historial_status_1);
-  Serial.print("historial_time_1:     ");
-  Serial.println(historial_time_1);
-  Serial.print("quantity_1:           ");
-  Serial.println(quantity_1);
-  Serial.print("first_day_1:          ");
-  Serial.println(first_day_1);
-  Serial.print("init_time_1:          ");
-  Serial.println(init_time_1);
-  Serial.print("interval_1:           ");
-  Serial.println(interval_1);
-  
-  
-  /*
-  quantity_1;
-  start_day_1;
-  start_time_1;
-  next_alarm_1;
-  */
-  
-}
-
-void updateStatusDown_1() {
-  
 }
 
 void make_up_hours(){
@@ -235,16 +136,14 @@ void check_time(){
   FirebaseJson json2;
   if(hours_attention[0] == timeLong){
     //se construye el json
-    int intTime = timeLong;
-    json1.add("hora", intTime).add("estado", true);
-    json2.add("hora", intTime).add("temp2", false);
-    
-    digitalWrite(pinLed1, HIGH);
-    digitalWrite(pinBuzzer, HIGH);
+    json1.add("hora", timeLong).add("estado", true);
+    json2.add("hora", timeLong).add("temp2", false);
+    digitalWrite(D1, HIGH);
+    digitalWrite(D5, HIGH);
     while(c<60){
       if(sensor1 == HIGH){
-        digitalWrite(pinLed1, LOW);
-        digitalWrite(pinBuzzer, LOW);
+        digitalWrite(D1, LOW);
+        digitalWrite(D5, LOW);
         //guardar historial
         if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+ String(timeLong)+"/", json1)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
@@ -255,8 +154,8 @@ void check_time(){
       delay(1000);
       c++;
     }
-    digitalWrite(pinBuzzer, LOW);
-    digitalWrite(pinLed1, LOW);
+    digitalWrite(D5, LOW);
+    digitalWrite(D1, LOW);
     if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+String(timeLong)+"/", json2)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
         } else {
@@ -264,13 +163,16 @@ void check_time(){
         }
   }
   else if(hours_attention[1] == timeLong){
-    digitalWrite(pinLed2, HIGH);
-    digitalWrite(pinBuzzer, HIGH);
+    digitalWrite(D2, HIGH);
+    digitalWrite(D5, HIGH);
+    // cambiar en la bd el estado a true
     while(c<60){
       if(sensor1 == HIGH){
-        digitalWrite(pinLed2, LOW);
-        digitalWrite(pinBuzzer, LOW);
+        digitalWrite(D2, LOW);
+        digitalWrite(D5, LOW);
         //guardar historial
+
+        //actualizar horario
         if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/"+String(timeLong)+"/", json1)) {
           Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
         } else {
@@ -280,8 +182,9 @@ void check_time(){
       delay(1000);
       c++;
     }
-    digitalWrite(pinBuzzer, LOW);
-    digitalWrite(pinLed2, LOW);
+    // cambiar en la bd el estado a false
+    digitalWrite(D5, LOW);
+    digitalWrite(D2, LOW);
     if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/" + String(timeLong) + "/", json2)) {
       Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
     } else {
