@@ -56,13 +56,32 @@ void setup() {
   timeClient.setTimeOffset(utcOffsetInSeconds);
   timeClient.setUpdateInterval(60000);
   
+  
+}
+
+
+void loop() {
+  sensor1 = digitalRead(D3);  //lectura digital de pin
+  sensor2 = digitalRead(D4);  //lectura digital de pin
+
+  updateFirebaseData();
+  
+  showTime();
+
+  make_up_hours(0);
+  make_up_hours(1);
+  
+  check_time();
+  delay(60000);
+}
+
+void updateFirebaseData() {
   while(true)
   {
     if(getDataFromFirebase("/dispositivo/casilla-001", 0)){
       break;
     }
     delay(10000);
-    
   }
   while(true)
   {
@@ -71,16 +90,6 @@ void setup() {
     }
     delay(10000);
   }
-}
-
-
-void loop() {
-  sensor1 = digitalRead(D3);  //lectura digital de pin
-  sensor2 = digitalRead(D4);  //lectura digital de pin
-
-  showTime();
-  check_time();
-  delay(60000);
 }
 
 void showTime() {
@@ -114,7 +123,7 @@ bool getDataFromFirebase(String mPath, int casilla) {
     Serial.println(value);
     Serial.println("------------------------------------");
     Serial.println();
-    make_up_hours(casilla);
+    
     Serial.println("------------------------------------");
     Serial.println();
     return true;
@@ -160,14 +169,17 @@ void check_time(){
     }
     
     while(c<60){
-      if(sensor1 == HIGH){
+      sensor1 = digitalRead(D3);  //lectura digital de pin
+      Serial.print("Sensor 1: ");
+      Serial.println(sensor1);
+      if(sensor1 == LOW){
         digitalWrite(D1, LOW);
         digitalWrite(D5, LOW);
         //guardar historial
-        if (Firebase.setInt(fbDataCasilla[0],mPath + "/horario/tiempo_inicio", (int(timeLong) + intervalo1))) {
+        if (Firebase.setInt(fbDataCasilla[0], mPath + "/horario/tiempo_inicio", (int(timeLong) + intervalo1))) {
           getDataFromFirebase(mPath, 0);
           //cambiamos el estado a apagado
-          if (Firebase.setBool(fbDataCasilla[0],mPath + fbDataCasilla[0].dataPath()+"/estado", false)) {
+          if (Firebase.setBool(fbDataCasilla[0], mPath + "/estado", false)) {
             getDataFromFirebase(mPath, 0);
             Serial.println("Pastillero activo");
           } else {
@@ -176,6 +188,7 @@ void check_time(){
         } else {
           Serial.println(firebaseData.errorReason());
         }
+        break;
       }
       delay(1000);
       c++;
@@ -183,7 +196,7 @@ void check_time(){
     digitalWrite(D5, LOW);
     digitalWrite(D1, LOW);
     //cambiamos el estado a desactivado
-    if (Firebase.setBool(fbDataCasilla[0], mPath + fbDataCasilla[0].dataPath()+"/estado", false)) {
+    if (Firebase.setBool(fbDataCasilla[0], mPath + "/estado", false)) {
       getDataFromFirebase(mPath, 0);
       Serial.println("Pastillero activo");
     } else {
@@ -205,7 +218,10 @@ void check_time(){
     }
     // cambiar en la bd el estado a true
     while(c<60){
-      if(sensor1 == HIGH){
+      sensor2 = digitalRead(D4);  //lectura digital de pin
+      Serial.print("Sensor 2: ");
+      Serial.println(sensor2);
+      if(sensor2 == LOW){
         digitalWrite(D2, LOW);
         digitalWrite(D5, LOW);
         //actualizar horario
@@ -220,6 +236,7 @@ void check_time(){
         } else {
           Serial.println(firebaseData.errorReason());
         }
+        break;
       }
       delay(1000);
       c++;
@@ -227,7 +244,7 @@ void check_time(){
     // cambiar en la bd el estado a false
     digitalWrite(D5, LOW);
     digitalWrite(D2, LOW);
-    if (Firebase.setBool(fbDataCasilla[1],mPath + fbDataCasilla[1].dataPath()+"/estado", false)) {
+    if (Firebase.setBool(fbDataCasilla[1], mPath + "/estado", false)) {
       getDataFromFirebase(mPath, 1);
       Serial.println("Pastillero activo");
     } else {
