@@ -78,10 +78,8 @@ void loop() {
   sensor1 = digitalRead(D3);  //lectura digital de pin
   sensor2 = digitalRead(D4);  //lectura digital de pin
 
-  //configAll();
   showTime();
-  //make_up_hours();
-  //check_time();
+  check_time();
   delay(60000);
 }
 
@@ -142,22 +140,39 @@ void make_up_hours(int casilla){
 
 void check_time(){
   int c=0;
-  FirebaseJson json1;
-  FirebaseJson json2;
-  if(hours_attention[0] == timeLong){
-    //se construye el json
-    int intTime = timeLong;
-    json1.add("hora", intTime).add("estado", true);
-    json2.add("hora", intTime).add("temp2", false);
+  FirebaseJsonData jsonData;
+  // debemos darle un rango
+  int tiempo_minimo = timeLong - 30;
+  int tiempo_limite = timeLong + 30; 
+  if(hours_attention[0] >= tiempo_minimo && hours_attention[0] <= tiempo_limite ){
+    //recupera intervalo
+    fbDataCasilla[0].jsonObject().get(jsonData, "/horario/intervalo");
+    int intervalo1 = jsonData.intValue;
     digitalWrite(D1, HIGH);
     digitalWrite(D5, HIGH);
+    String mPath = fbDataCasilla[0].dataPath();
+    //cambiamos el estado a acttivo
+    if (Firebase.setBool(fbDataCasilla[0], fbDataCasilla[0].dataPath()+"/estado", true)) {
+      getDataFromFirebase(mPath, 0);
+      Serial.println("Pastillero activo");
+    } else {
+      Serial.println(fbDataCasilla[0].errorReason());
+    }
+    
     while(c<60){
       if(sensor1 == HIGH){
         digitalWrite(D1, LOW);
         digitalWrite(D5, LOW);
         //guardar historial
-        if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+ String(timeLong)+"/", json1)) {
-          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+        if (Firebase.setInt(fbDataCasilla[0],mPath + "/horario/tiempo_inicio", (int(timeLong) + intervalo1))) {
+          getDataFromFirebase(mPath, 0);
+          //cambiamos el estado a apagado
+          if (Firebase.setBool(fbDataCasilla[0],mPath + fbDataCasilla[0].dataPath()+"/estado", false)) {
+            getDataFromFirebase(mPath, 0);
+            Serial.println("Pastillero activo");
+          } else {
+            Serial.println(fbDataCasilla[0].errorReason());
+          }
         } else {
           Serial.println(firebaseData.errorReason());
         }
@@ -167,25 +182,41 @@ void check_time(){
     }
     digitalWrite(D5, LOW);
     digitalWrite(D1, LOW);
-    if (Firebase.pushJSON(firebaseData, "dispositivo/casilla-001/historial/"+String(timeLong)+"/", json2)) {
-          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
-        } else {
-          Serial.println(firebaseData.errorReason());
-        }
+    //cambiamos el estado a desactivado
+    if (Firebase.setBool(fbDataCasilla[0], mPath + fbDataCasilla[0].dataPath()+"/estado", false)) {
+      getDataFromFirebase(mPath, 0);
+      Serial.println("Pastillero activo");
+    } else {
+      Serial.println(fbDataCasilla[0].errorReason());
+    }
   }
-  else if(hours_attention[1] == timeLong){
+  else if(hours_attention[1] >= tiempo_minimo && hours_attention[1] <= tiempo_limite){
+    fbDataCasilla[1].jsonObject().get(jsonData, "/horario/intervalo");
+    int intervalo2 = jsonData.intValue;
     digitalWrite(D2, HIGH);
     digitalWrite(D5, HIGH);
+    String mPath = fbDataCasilla[1].dataPath();
+    //cambiamos el estado a acttivo
+    if (Firebase.setBool(fbDataCasilla[1], fbDataCasilla[1].dataPath()+"/estado", true)) {
+      getDataFromFirebase(mPath, 1);
+      Serial.println("Pastillero activo");
+    } else {
+      Serial.println(fbDataCasilla[1].errorReason());
+    }
     // cambiar en la bd el estado a true
     while(c<60){
       if(sensor1 == HIGH){
         digitalWrite(D2, LOW);
         digitalWrite(D5, LOW);
-        //guardar historial
-
         //actualizar horario
-        if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/"+String(timeLong)+"/", json1)) {
-          Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+        if (Firebase.setInt(fbDataCasilla[1], mPath + "/horario/tiempo_inicio", (int(timeLong) + intervalo2))) {
+          getDataFromFirebase(mPath, 1);
+          if (Firebase.setBool(fbDataCasilla[1], fbDataCasilla[1].dataPath()+"/estado", false)) {
+            getDataFromFirebase(mPath, 1);
+            Serial.println("Pastillero activo");
+          } else {
+            Serial.println(fbDataCasilla[1].errorReason());
+          }
         } else {
           Serial.println(firebaseData.errorReason());
         }
@@ -196,10 +227,15 @@ void check_time(){
     // cambiar en la bd el estado a false
     digitalWrite(D5, LOW);
     digitalWrite(D2, LOW);
-    if (Firebase.pushJSON(firebaseData, "/dispositivo/casilla-002/historial/" + String(timeLong) + "/", json2)) {
-      Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());        
+    if (Firebase.setBool(fbDataCasilla[1],mPath + fbDataCasilla[1].dataPath()+"/estado", false)) {
+      getDataFromFirebase(mPath, 1);
+      Serial.println("Pastillero activo");
     } else {
-      Serial.println(firebaseData.errorReason());
+      Serial.println(fbDataCasilla[1].errorReason());
     }
   }
+}
+
+int get_hours_interval( int interval){
+
 }
